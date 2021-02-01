@@ -1,0 +1,203 @@
+heat_template_version: rocky
+# test template
+parameters:
+    key_name:
+        type: string
+        label: Key Name
+        default: mykey
+    mgmt_wan:
+        type: string
+        label: Image ID
+        default: {{ net_mgmt }}
+    avail_zone:
+        type: string
+        label: Image ID
+        default: {{ avail_zone }}
+{% for name_rtr in vm['routers'] %}
+    {{name_rtr}}_image:
+        type: string
+        label: Image ID
+        default: {{ vm['routers'][name_rtr].image }}
+    {{name_rtr}}_flavor:
+        type: string
+        label: Image ID
+        default: {{ vm['routers'][name_rtr].flavor }}
+{% endfor %}        
+    str_config:
+        type: string
+        default: |
+          hostname ROUTER
+          username root privilege 15 password cisco
+          ip domain name lab.lanhome.org
+          crypto key generate rsa modulus 1024
+          cdp run
+          vrf definition VRF_MGMT
+           !
+           address-family ipv4
+           exit-address-family
+          
+          interface GigabitEthernet1
+           vrf forwarding VRF_MGMT
+           ip address dhcp
+           no shutdown
+           
+          interface GigabitEthernet2
+           no shutdown
+           ip address dhcp
+           cdp enable
+
+          interface GigabitEthernet3
+           no shutdown
+           ip address dhcp
+           cdp enable
+
+          interface GigabitEthernet4
+           no shutdown
+           ip address dhcp
+           cdp enable
+
+          interface GigabitEthernet5
+           no shutdown
+           ip address dhcp
+           cdp enable
+
+          interface GigabitEthernet6
+           no shutdown
+           ip address dhcp
+           cdp enable
+
+          ip ssh version 2
+          router ospf 10
+            network 0.0.0.0 0.0.0.0 area 0
+          ip ssh pubkey-chain
+            username root
+             key-hash ssh-rsa D97CAB919374E8B7AD4AD8F7129C2494
+          
+          line vty 0 4
+           login local
+           exec-timeout 60 0
+           transport input ssh
+
+resources:
+{% for rt_name, rt_value in srv.items() %}
+##################################################################
+# create server {{ rt_name }} 
+##################################################################
+    {{ rt_name }}:
+      type: OS::Nova::Server 
+      properties:
+        availability_zone: { get_param: avail_zone }
+        image: {{ vm['server'].image }}
+        flavor: {{ vm['server'].flavor }}
+        key_name: { get_param: key_name }
+        name:
+          list_join: ['_', [{ get_param: "OS::stack_name" }, "{{ rt_name }}"] ] 
+        networks:
+          - network: { get_param: mgmt_wan }
+{%    for nt_name, nt in rt_value.links.items() %}
+          - port: { get_resource: {{ rt_name }}_{{ nt_name }}_port }
+{%    endfor %}
+{% endfor %}
+
+{% for rt_name, rt_value in routers.items() %}
+##################################################################
+# create router {{ rt_name }} and init
+##################################################################
+    {% if rt_value.type == 'vios' %}
+    init_{{ rt_name }}:
+      type: OS::Cinder::Volume
+      properties:
+        image: "{{ vm['routers'][rt_value.type].init_img }}"
+        name: 
+          list_join: ['-', [{ get_param: "OS::stack_name" }, "vol-init", "{{ rt_name }}"] ] 
+        size: 1
+    {% endif %}
+
+    {{ rt_name }}: 
+      type: OS::Nova::Server 
+      properties: 
+        image: { get_param: {{ rt_value.type }}_image}
+        flavor: { get_param: {{ rt_value.type }}_flavor}
+        key_name: { get_param: key_name }
+        availability_zone: { get_param: avail_zone }
+        config_drive: True
+        name: 
+          list_join: ['_', [{ get_param: "OS::stack_name" }, "{{ rt_name }}"] ] 
+    {% if rt_value.type == 'csr' %}
+        personality: 
+          "iosxe_config.txt": { str_replace_strict: { template: {get_param: str_config}, params: { ROUTER: "{{ rt_name }}" } }}
+    {% endif %}
+    {% if rt_value.type == 'vios' %}
+        block_device_mapping: 
+          - { device_name: 'vdb', volume_id: { get_resource: init_{{ rt_name }} }, delete_on_termination: true }
+    {% endif %}
+        networks:
+          - network: { get_param: mgmt_wan }
+{%    for nt_name, nt in rt_value.links.items() %}
+          - port: { get_resource: {{ rt_name }}_{{ nt_name }}_port }
+{%    endfor %}
+
+{% endfor %}
+
+{% for net_name, net in nets.items() %}
+##################################################################
+# create network {{ net_name }}
+##################################################################
+    {{ net_name }}:
+      type: OS::Neutron::Net
+      properties: 
+        port_security_enabled: false
+        name: 
+          list_join: ['_', [{ get_param: "OS::stack_name" }, '{{ net_name }}'] ]
+
+    {{ net_name }}_sub:
+      type: OS::Neutron::Subnet
+      depends_on: [ {{ net_name }} ]
+      properties:
+        name: 
+          list_join: ['_', [{ get_param: "OS::stack_name" }, '{{ net_name }}_sub'] ]
+        gateway_ip: null
+        #enable_dhcp: false
+        network: {get_resource: {{ net_name }}}
+        ip_version: 4
+        cidr: {{ net.ipv4 }}
+
+{% endfor %}
+
+{% for rt_name, rt_value in routers.items() %}
+##################################################################
+# create ports for {{ rt_name }}
+##################################################################
+
+{%    for nt_name,nt in rt_value.links.items() %}
+    {{ rt_name }}_{{ nt_name }}_port:
+      type: OS::Neutron::Port
+      depends_on: [ {{ nt_name }} ]
+      properties:
+        network: { get_resource: {{ nt_name }} }
+        port_security_enabled: false
+        name: 
+          list_join: ['_', [{ get_param: "OS::stack_name" }, '{{ rt_name }}_{{ nt_name }}_port'] ]
+        fixed_ips: 
+          - ip_address: '{{ nt.ipv4 }}'
+{%    endfor %}
+{% endfor %}
+
+{% for rt_name, rt_value in srv.items() %}
+##################################################################
+# create ports for {{ rt_name }}
+##################################################################
+
+{%    for nt_name,nt in rt_value.links.items() %}
+    {{ rt_name }}_{{ nt_name }}_port:
+      type: OS::Neutron::Port
+      depends_on: [ {{ nt_name }} ]
+      properties:
+        network: { get_resource: {{ nt_name }} }
+        port_security_enabled: false
+        name: 
+          list_join: ['_', [{ get_param: "OS::stack_name" }, '{{ rt_name }}_{{ nt_name }}_port'] ]
+        fixed_ips: 
+          - ip_address: '{{ nt.ipv4 }}'
+{%    endfor %}
+{% endfor %}
