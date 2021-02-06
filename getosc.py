@@ -26,7 +26,7 @@ epilog = "Alexey Karpov "
 eveng_host = "lab.lanhome.org"
 iterm_profile = "prof_telnet"
 
-apple_script_template = '''
+apple_script_template = """
 tell application "Terminal"
     if not (exists window 1) then reopen
         activate
@@ -37,7 +37,7 @@ tell application "Terminal"
 {% endfor %}
     tell application "System Events" to keystroke "w" using command down
 end tell
-'''
+"""
 
 
 def run_applescript(lab_routers):
@@ -49,7 +49,7 @@ def run_applescript(lab_routers):
     apple_script = env.render(routers=lab_routers, eveng_host=eveng_host, prof=iterm_profile)
     logger.info(apple_script)
 
-    p = Popen(['osascript', '-'], stdin=PIPE, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    p = Popen(["osascript", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE, universal_newlines=True)
     stdout, stderr = p.communicate(apple_script)
 
 
@@ -64,11 +64,11 @@ def main():
     lab_routers = ""
     lab_routers = get_routers_from_openstack()
     if lab_routers:
-        logger.debug(f'{lab_routers}')
+        logger.debug(f"{lab_routers}")
         run_applescript(lab_routers)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # print(f'Modules path: {sys.path}')
     wan_name = "wan0"
     lab_name = "labv10"
@@ -79,6 +79,6 @@ if __name__ == '__main__':
         wan_name = sys.argv[1]
     elif len(sys.argv) == 2:
         lab_name = sys.argv[1]
-    logger.info(f'lab: {lab_name} wan: {wan_name}')
+    logger.info(f"lab: {lab_name} wan: {wan_name}")
     # print(f'lab: {lab_name} wan: {wan_name}')
     main()

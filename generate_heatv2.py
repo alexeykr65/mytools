@@ -96,8 +96,8 @@ def main():
     # logger.info(rt_lab)
     # logger.info(rt_nets)
     # logger.info(vm_conf)
-    logger.info(f'gr_links: {json.dumps(gr_links, indent=2)}')
-    logger.info(f'srv_lab: {srv_lab}')
+    logger.debug(f'gr_links: {json.dumps(gr_links, indent=2)}')
+    logger.debug(f'srv_lab: {srv_lab}')
     for rt_key, rt in rt_lab.items():
         index_router = 100 + int(re.match('^[^\d]*(\d*)', rt_key).group(1))
         rt_lab[rt_key]['type'] = conf_yaml['routers'][rt_key]['type']
@@ -119,13 +119,13 @@ def main():
             srv_lab[rt_key]['links'][ln_key]['ipv4'] = ip
 
     logger.info('Generate stack template')
-    logger.info(f'rt_lab: {json.dumps(rt_lab, indent=2)}')
+    logger.debug(f'rt_lab: {json.dumps(rt_lab, indent=2)}')
     if cmd_args.generate:
         generate_stack_template(heat_template_file, out_stack, rt_lab, rt_nets, cmd_args.netid, vm_conf, srv_lab)
     # print(gr_links)
-    logger.info(f'srv_lab: {srv_lab}')
-    logger.info(f'gr_links: {json.dumps(gr_links, indent=2)}')
-    logger.info(f'rt_lab: {json.dumps(rt_lab, indent=2)}')
+    logger.debug(f'srv_lab: {srv_lab}')
+    logger.debug(f'gr_links: {json.dumps(gr_links, indent=2)}')
+    logger.debug(f'rt_lab: {json.dumps(rt_lab, indent=2)}')
     if cmd_args.draw:
         draw_net_ipv4_sorted(gr_links)
 

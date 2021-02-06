@@ -27,8 +27,8 @@ epilog = "Alexey Karpov "
 def cmdArgsParser():
     # logger.info("Parsing arguments ...")
     parser = argparse.ArgumentParser(description=description, epilog=epilog)
-    parser.add_argument('--list', help='Generate dynamic ansible inventory - all host', action="store_true")
-    parser.add_argument('--host', help='Generate dynamic ansible inventory - only one host', action="store")
+    parser.add_argument("--list", help="Generate dynamic ansible inventory - all host", action="store_true")
+    parser.add_argument("--host", help="Generate dynamic ansible inventory - only one host", action="store")
     return parser.parse_args()
 
 
@@ -39,14 +39,14 @@ def main():
     wan = "wan0"
     lab = "labv10"
     if cmd_args.host:
-        print('{}')
+        print("{}")
         exit(0)
 
     if os.path.exists(file_config):
         with open(file_config) as file:
             param_list = yaml.load(file, Loader=yaml.FullLoader)
-        wan = param_list['wan']
-        lab = param_list['lab']
+        wan = param_list["wan"]
+        lab = param_list["lab"]
         # print(param_list)
 
     ops_server = ops.Servers(name=lab, dbg=logging.ERROR)
@@ -55,7 +55,7 @@ def main():
     #     ops_server.create_dynamic_inventory(wan)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger = AkarLogging(logging.ERROR, "os_inventory").get_color_logger()
     cmd_args = cmdArgsParser()
     main()
