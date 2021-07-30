@@ -37,7 +37,7 @@ def main():
     file_config = "oslabs.yml"
     lab_routers = ""
     wan = "wan0"
-    lab = "labv10"
+    lab = "labv22"
     if cmd_args.host:
         print("{}")
         exit(0)

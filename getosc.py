@@ -24,14 +24,19 @@ epilog = "Alexey Karpov "
 
 
 eveng_host = "lab.lanhome.org"
-iterm_profile = "prof_telnet"
+# iterm_profile = "prof_telnet"
 
 apple_script_template = """
 tell application "Terminal"
-    if not (exists window 1) then reopen
+    activate
+    set winlist to every window
+    if (count of winlist) > 1 then 
+        tell application "System Events" to keystroke "n" using command down
         activate
+    end if
+    delay 1
 {% for rt in routers %}
-    do script  "echo \\"\\\\033]0;{{ rt }}\\\\007\\"; ssh -o 'UserKnownHostsFile=/dev/null' -o 'StrictHostKeyChecking=no' -l {{ routers[rt]['user'] }} {{ routers[rt]['ipv4'] }}" in window 1
+    do script  "echo \\"\\\\033]0;{{ rt }}\\\\007\\"; ssh -o 'UserKnownHostsFile=/dev/null' -o 'StrictHostKeyChecking=no' -l {{ routers[rt]['user'] }} {{ routers[rt]['ipv4'] }}" in front window
     tell application "System Events" to keystroke "t" using command down            
     delay 1
 {% endfor %}
@@ -46,7 +51,7 @@ def run_applescript(lab_routers):
     env.trim_blocks = True
     env.lstrip_blocks = True
     env.rstrip_blocks = True
-    apple_script = env.render(routers=lab_routers, eveng_host=eveng_host, prof=iterm_profile)
+    apple_script = env.render(routers=lab_routers, eveng_host=eveng_host)
     logger.info(apple_script)
 
     p = Popen(["osascript", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE, universal_newlines=True)
@@ -55,7 +60,8 @@ def run_applescript(lab_routers):
 
 def get_routers_from_openstack():
     logger.info("Get list servers with ip addresses ... ")
-    ops_server = ops.Servers(name=lab_name, dbg=logging.INFO)
+    ops_server = ops.Servers(name=lab_name, dbg=logging.WARNING)
+    # im = ops.Images()
     # logger.info(srv_ips)
     return ops_server.get_srv_nets(wan_name)
 
@@ -75,8 +81,8 @@ if __name__ == "__main__":
     logger = AkarLogging(logging.INFO, "run_iterm").get_color_logger()
     # cmd_args = cmdArgsParser()
     if len(sys.argv) > 2:
-        lab_name = sys.argv[2]
-        wan_name = sys.argv[1]
+        lab_name = sys.argv[1]
+        wan_name = sys.argv[2]
     elif len(sys.argv) == 2:
         lab_name = sys.argv[1]
     logger.info(f"lab: {lab_name} wan: {wan_name}")

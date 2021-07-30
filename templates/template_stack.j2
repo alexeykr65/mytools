@@ -31,37 +31,66 @@ parameters:
           ip domain name lab.lanhome.org
           crypto key generate rsa modulus 1024
           cdp run
-          vrf definition VRF_MGMT
+          ipv6 unicast-routing
+          vrf definition MGMT
            !
            address-family ipv4
            exit-address-family
+           !
+           address-family ipv6
+           exit-address-family
           
           interface GigabitEthernet1
-           vrf forwarding VRF_MGMT
+           vrf forwarding MGMT
            ip address dhcp
+           ipv6 address dhcp rapid-commit
+           ipv6 enable
+           ipv6 nd autoconfig prefix
+           ipv6 nd autoconfig default-route
+           ipv6 nd ra suppress all
            no shutdown
-           
+
           interface GigabitEthernet2
+           ipv6 address dhcp rapid-commit
+           ipv6 nd autoconfig default-route 
+           ipv6 nd autoconfig prefix
+           ipv6 enable
            no shutdown
            ip address dhcp
            cdp enable
 
           interface GigabitEthernet3
+           ipv6 address dhcp rapid-commit
+           ipv6 nd autoconfig default-route 
+           ipv6 nd autoconfig prefix
+           ipv6 enable
            no shutdown
            ip address dhcp
            cdp enable
 
           interface GigabitEthernet4
+           ipv6 address dhcp rapid-commit
+           ipv6 nd autoconfig default-route 
+           ipv6 nd autoconfig prefix
+           ipv6 enable
            no shutdown
            ip address dhcp
            cdp enable
 
           interface GigabitEthernet5
+           ipv6 address dhcp rapid-commit
+           ipv6 nd autoconfig default-route 
+           ipv6 nd autoconfig prefix
+           ipv6 enable
            no shutdown
            ip address dhcp
            cdp enable
 
           interface GigabitEthernet6
+           ipv6 address dhcp rapid-commit
+           ipv6 nd autoconfig default-route 
+           ipv6 nd autoconfig prefix
+           ipv6 enable
            no shutdown
            ip address dhcp
            cdp enable

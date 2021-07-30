@@ -17,8 +17,6 @@ import akarlibs.kvmlibvirt as kv
 
 description = "sniff-lab: Run wireshark for vm interfaces in openstack via ssh"
 epilog = "Alexey Karpov "
-uri_qemu = "qemu+ssh://root@osc/system?socket=/var/run/libvirt/libvirt-sock"
-os_name = "root@osc"
 
 
 def cmdArgsParser():
@@ -33,16 +31,17 @@ def main():
     lab_host = cmd_args.name
     host_intrf = f"net{int(cmd_args.interface)-1}"
     logger.info(f"host: {lab_host} interface: {host_intrf}")
-    ops_server = ops.Servers(name=lab_host, dbg=logging.ERROR)
+    ops_server = ops.Servers(name=lab_host, dbg=logging.WARNING)
     if len(ops_server.servers) > 1:
         logging.error("Exist few elements but need one")
         exit(1)
     else:
         srv = ops_server.servers[0]
     logger.info(f"{srv.name} : {srv.instance}")
-    kvminfo = kv.KvmInstanceInfo(uri_qemu=uri_qemu, name_instance=srv.instance)
-    logger.info("Interface: {kvminfo.interfaces[host_intrf].dev}")
-    p_ssh = Popen(["ssh", os_name, "tcpdump", "-U", "-i", str(kvminfo.interfaces[host_intrf].dev), "-s", "0", "-w", "-"], stdout=PIPE)
+    logger.info(f"Interface: {srv.kvminfo.interfaces[host_intrf].dev}")
+    os_name = f"root@{srv.host}"
+    logger.info(f'os_name: {os_name}')
+    p_ssh = Popen(["ssh", os_name, "tcpdump", "-U", "-i", str(srv.kvminfo.interfaces[host_intrf].dev), "-s", "0", "-w", "-"], stdout=PIPE)
     p_wireshark = Popen(["wireshark", "-k", "-i", "-"], stdin=p_ssh.stdout)
 
 
