@@ -31,7 +31,8 @@ def main():
     lab_host = cmd_args.name
     host_intrf = f"net{int(cmd_args.interface)-1}"
     logger.info(f"host: {lab_host} interface: {host_intrf}")
-    ops_server = ops.Servers(name=lab_host, dbg=logging.WARNING)
+    ops_server = ops.Servers(name=lab_host, dbg=logging.WARNING, name_underline=False)
+    # print(f'srv: {ops_server}')
     if len(ops_server.servers) > 1:
         logging.error("Exist few elements but need one")
         exit(1)
